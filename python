@@ -1,0 +1,55 @@
+import cv2
+
+# Kamerayı başlat
+cap = cv2.VideoCapture(0)
+
+# Kamera çözünürlüğünü ayarla
+cap.set(3, 640)
+cap.set(4, 480)
+
+while True:
+    # Kameradan bir frame al
+    ret, frame = cap.read()
+
+    # Eğer frame alınamazsa döngüyü sonlandır
+    if not ret:
+        break
+
+    # Görüntüyü siyah-beyaz yap
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Gürültüyü azaltmak için GaussianBlur uygula
+    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
+
+    # Kenarları belirleme (Canny Edge Detection)
+    edges = cv2.Canny(blurred_frame, 50, 150)
+
+    # Dilation ve Erosion uygula (Morphological Transformations)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    dilated_edges = cv2.dilate(edges, kernel, iterations=2)
+    eroded_edges = cv2.erode(dilated_edges, kernel, iterations=1)
+
+    # Contour tespiti
+    contours, hierarchy = cv2.findContours(eroded_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Contourları orijinal frame üzerine çiz
+    cv2.drawContours(frame, contours, -1, (0, 255, 0), 2)
+
+    # Siyah-beyaz ve işlenmiş görüntüleri yan yana göster
+    combined_frame = cv2.hconcat([frame, cv2.cvtColor(eroded_edges, cv2.COLOR_GRAY2BGR)])
+
+    # Pencere başlığını güncelle
+    cv2.setWindowTitle('Siyah Beyaz ve İşlenmiş Görüntü', 'Press Q to exit')
+
+    # Siyah-beyaz ve işlenmiş görüntüyü ekrana göster
+    cv2.imshow('Siyah Beyaz ve İşlenmiş Görüntü', combined_frame)
+
+    # q tuşuna basıldığında döngüyü sonlandır
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Kamerayı kapat
+cap.release()
+
+# Pencereleri kapat
+cv2.destroyAllWindows()
